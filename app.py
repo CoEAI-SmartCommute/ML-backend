@@ -19,6 +19,10 @@ data['accident_score'] = (data['Death'] * 2) + (data['Grievous'] * 1.5) + (data[
 data = data[data['accident_score'] != 0]
 x_di = data['accident_score'].values
 
+@app.route('/test')
+def test():
+    return Response('{ "message":"Please retry!"}', status=201, mimetype='application/json')
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try :
