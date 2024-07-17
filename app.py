@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, make_response, request, jsonify
 import joblib
 import numpy as np
 import pandas as pd
@@ -45,7 +45,9 @@ def predict():
         danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
         
         # Return the danger score as JSON
-        return jsonify({'danger_score': danger_score})
+        # return jsonify({'danger_score': danger_score})
+        response = jsonify({'danger_score': danger_score})
+        return make_response(response, 200) 
     except Exception as e:
         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
 
