@@ -2,10 +2,12 @@ from flask import Flask, Response, request, jsonify
 import joblib
 import numpy as np
 import pandas as pd
+from flask_cors import CORS
 
 from model import calculate_point_danger
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the saved kNN model
 joblib_file = "knn_model.pkl"
