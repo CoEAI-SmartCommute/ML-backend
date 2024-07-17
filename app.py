@@ -23,7 +23,7 @@ x_di = data['accident_score'].values
 
 @app.route('/test')
 def test():
-    return Response('{ "message":"Please retry!"}', status=201, mimetype='application/json')
+    return Response('{ "message":"Application is up and running"}', status=201, mimetype='application/json')
 
 @app.route('/predict', methods=['POST'])
 def predict():
