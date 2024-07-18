@@ -26,31 +26,31 @@ x_di = data['accident_score'].values
 def test():
     return Response('{ "message":"Application is up and running"}', status=201, mimetype='application/json')
 
-# @app.route('/predict_point', methods=['POST'])
-# def predict():
-#     try :
-#         # Get data from POST request
-#         data = request.get_json(force=True)
+@app.route('/predict', methods=['POST'])
+def predict():
+    try :
+        # Get data from POST request
+        data = request.get_json(force=True)
         
-#         # Parse the data for prediction
-#         longitude = data['Longitude']
-#         latitude = data['Latitude']
+        # Parse the data for prediction
+        longitude = data['Longitude']
+        latitude = data['Latitude']
         
-#         # Create an array for prediction
-#         prediction_data = np.array([[longitude, latitude]])
+        # Create an array for prediction
+        prediction_data = np.array([[longitude, latitude]])
         
-#         # Get the nearest neighbors using the kNN model
-#         distances, indices = knn_model.kneighbors(prediction_data)
+        # Get the nearest neighbors using the kNN model
+        distances, indices = knn_model.kneighbors(prediction_data)
         
-#         # Calculate the danger score
-#         danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
+        # Calculate the danger score
+        danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
         
-#         # Return the danger score as JSON
-#         # return jsonify({'danger_score': danger_score})
-#         response = jsonify({'danger_score': danger_score})
-#         return make_response(response, 200) 
-#     except Exception as e:
-#         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
+        # Return the danger score as JSON
+        # return jsonify({'danger_score': danger_score})
+        response = jsonify({'danger_score': danger_score})
+        return make_response(response, 200) 
+    except Exception as e:
+        return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
 
 
 
