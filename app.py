@@ -43,7 +43,7 @@ def predict():
         distances, indices = knn_model.kneighbors(prediction_data)
         
         # Calculate the danger score
-        danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
+        danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di)
         
         # Return the danger score as JSON
         # return jsonify({'danger_score': danger_score})
@@ -87,7 +87,7 @@ def getdirection():
              return make_response(response, 500)
         
         result = []
-             
+        uid=1
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
             # danger = calculate_path_danger(lat_long_arr,knn_model,x_di)
@@ -100,8 +100,9 @@ def getdirection():
                 temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
                 danger+=temp
             danger = danger/sz
-            result.append({"polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
-            print(result)
+            result.append({"id":uid, "polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
+            # print(result)
+            uid+=1
             response = jsonify(result)
         return make_response(response, 200)
     except Exception as e:
