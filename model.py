@@ -1,5 +1,8 @@
 # Decode the polyline string and return array of lat long pair
 
+import requests
+
+
 def decode_polyline(encoded):
     if not encoded:
         return []
@@ -43,7 +46,7 @@ def decode_polyline(encoded):
 
 # Calculate accident score for a give lat long point
 
-def calculate_point_danger(longitude,latitude,dist,ind,x_di,data):
+def calculate_point_danger(longitude,latitude,dist,ind,x_di):
     # result = data[(data['Longitude'] == longitude) & (data['Latitude'] == latitude)]['accident_score']
 
     # if not result.empty:
@@ -63,13 +66,24 @@ def calculate_point_danger(longitude,latitude,dist,ind,x_di,data):
     return ans/sz
 
 
-def calculate_path_danger(lat_long_pair_arr):
+def calculate_path_danger(lat_long_pair_arr,knn_model,x_di):
 
   sz = len(lat_long_pair_arr)
   total_di =0
   for a in lat_long_pair_arr:
-    temp = calculate_point_danger(a[0],a[1])
+    dist,ind = knn_model.kneighbors(a)
+    temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
     total_di+=temp
-
   return (total_di/sz)
 
+
+def get_directions(origin_lat,origin_long,dest_lat,dest_long):
+    origin = origin_lat + ', ' + origin_long
+    destination = dest_lat + ', ' + dest_long
+
+    API_KEY = 'AIzaSyBy45iq2jviV0N6f1HXK_FzyUag9apSsD4'
+    url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&alternatives=true&key={API_KEY}'
+
+    response = requests.get(url)
+    directions = response.json()
+    return directions

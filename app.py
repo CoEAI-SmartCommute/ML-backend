@@ -3,8 +3,9 @@ import joblib
 import numpy as np
 import pandas as pd
 from flask_cors import CORS
+from model import calculate_path_danger, calculate_point_danger, decode_polyline, get_directions
+import requests
 
-from model import calculate_point_danger
 
 app = Flask(__name__)
 CORS(app)
@@ -25,31 +26,84 @@ x_di = data['accident_score'].values
 def test():
     return Response('{ "message":"Application is up and running"}', status=201, mimetype='application/json')
 
-@app.route('/predict', methods=['POST'])
+# @app.route('/predict_point', methods=['POST'])
+# def predict():
+#     try :
+#         # Get data from POST request
+#         data = request.get_json(force=True)
+        
+#         # Parse the data for prediction
+#         longitude = data['Longitude']
+#         latitude = data['Latitude']
+        
+#         # Create an array for prediction
+#         prediction_data = np.array([[longitude, latitude]])
+        
+#         # Get the nearest neighbors using the kNN model
+#         distances, indices = knn_model.kneighbors(prediction_data)
+        
+#         # Calculate the danger score
+#         danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
+        
+#         # Return the danger score as JSON
+#         # return jsonify({'danger_score': danger_score})
+#         response = jsonify({'danger_score': danger_score})
+#         return make_response(response, 200) 
+#     except Exception as e:
+#         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
+
+
+
+
+@app.route('/api/v1/direction', methods = ['POST'])
 def predict():
-    try :
-        # Get data from POST request
+    try:
         data = request.get_json(force=True)
+        origin_lat = str(data['origin_lat'])
+        origin_long = str(data['origin_long'])
+
+        dest_lat = str(data['dest_lat'])
+        dest_long = str(data['dest_long'])
+
+        directions = get_directions(origin_lat, origin_long, dest_lat, dest_long)
+
+        direction_polylines = []
+        if directions['status'] == 'OK':
+            for route in directions['routes']:
+                polyline = route['overview_polyline']['points']
+                distance = route['legs'][0]['distance']
+                duration = route['legs'][0]['duration']
+                direction_polylines.append({"polyline": polyline, "distance": distance, "duration": duration})
+        else:
+             print("Error: ", directions['status'])
+             response  = jsonify({'message':  directions['status']})
+             return make_response(response, 500)
         
-        # Parse the data for prediction
-        longitude = data['Longitude']
-        latitude = data['Latitude']
-        
-        # Create an array for prediction
-        prediction_data = np.array([[longitude, latitude]])
-        
-        # Get the nearest neighbors using the kNN model
-        distances, indices = knn_model.kneighbors(prediction_data)
-        
-        # Calculate the danger score
-        danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di,data)
-        
-        # Return the danger score as JSON
-        # return jsonify({'danger_score': danger_score})
-        response = jsonify({'danger_score': danger_score})
-        return make_response(response, 200) 
+        result = []
+             
+        for r in direction_polylines:
+            lat_long_arr = decode_polyline(r['polyline'])
+            danger = calculate_path_danger(lat_long_arr,knn_model,x_di)
+            result.append({"polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
+        return Response(result, 500)
     except Exception as e:
-        return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
+        response = jsonify({"message": e})
+        return make_response(response,500)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port = 5000)
+    app.run(host='0.0.0.0',port = 5000,debug=True)
+
+
+
+
+
+#     import requests
+
+# API_KEY = 'AIzaSyBy45iq2jviV0N6f1HXK_FzyUag9apSsD4'
+# origin = '40.712776,-74.005974'  # New York City
+# destination = '42.360082,-71.058880'  # Boston
+# url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&alternatives=true&key={API_KEY}'
+
+
+
+
