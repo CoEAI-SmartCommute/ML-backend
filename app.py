@@ -55,6 +55,13 @@ def test():
 
 
 
+@app.route('/api/v1/test2', methods =['POST'])
+def test2():
+    data = request.get_json(force=True)
+    print(data)
+    return Response('{"message": "Deepanshu garg"}',200)
+
+
 @app.route('/api/v1/direction', methods = ['POST'])
 def predict():
     try:
@@ -71,8 +78,8 @@ def predict():
         if directions['status'] == 'OK':
             for route in directions['routes']:
                 polyline = route['overview_polyline']['points']
-                distance = route['legs'][0]['distance']
-                duration = route['legs'][0]['duration']
+                distance = route['legs'][0]['distance']['text']
+                duration = route['legs'][0]['duration']['text']
                 direction_polylines.append({"polyline": polyline, "distance": distance, "duration": duration})
         else:
              print("Error: ", directions['status'])
@@ -83,9 +90,20 @@ def predict():
              
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
-            danger = calculate_path_danger(lat_long_arr,knn_model,x_di)
+            # danger = calculate_path_danger(lat_long_arr,knn_model,x_di)
+            sz = len(lat_long_arr)
+            danger =0
+            for a in lat_long_arr:
+                to_send = []
+                to_send.append(a)
+                dist,ind = knn_model.kneighbors(to_send)
+                temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
+                danger+=temp
+            danger = danger/sz
             result.append({"polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
-        return Response(result, 500)
+            print(result)
+            response = jsonify(result)
+        return make_response(response, 200)
     except Exception as e:
         response = jsonify({"message": e})
         return make_response(response,500)
