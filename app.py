@@ -63,7 +63,7 @@ def test2():
 
 
 @app.route('/api/v1/direction', methods = ['POST'])
-def predict():
+def getdirection():
     try:
         data = request.get_json(force=True)
         origin_lat = str(data['origin_lat'])
