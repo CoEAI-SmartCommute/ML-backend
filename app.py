@@ -101,8 +101,9 @@ def getdirection():
                 temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
                 danger+=temp
             danger = danger/sz
-            danger_score = 7-danger_score
-            danger_score = np.minimum(10, danger_score*10/7)
+            danger = 7-danger
+            danger = np.minimum(10, danger*10/7)
+            print(danger)
             result.append({"id":uid, "polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
             # print(result)
             uid+=1  
