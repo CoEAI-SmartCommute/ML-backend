@@ -44,7 +44,8 @@ def predict():
         
         # Calculate the danger score
         danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di)
-        
+        danger_score= 7-danger_score
+        danger_score= np.minimum(10,danger_score*10/7)
         # Return the danger score as JSON
         # return jsonify({'danger_score': danger_score})
         response = jsonify({'danger_score': danger_score})
@@ -100,9 +101,11 @@ def getdirection():
                 temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
                 danger+=temp
             danger = danger/sz
+            danger_score = 7-danger_score
+            danger_score = np.minimum(10, danger_score*10/7)
             result.append({"id":uid, "polyline": r['polyline'], "danger_score": danger, "duration": r['duration'], "distance": r['distance']})
             # print(result)
-            uid+=1
+            uid+=1  
             response = jsonify(result)
         return make_response(response, 200)
     except Exception as e:
