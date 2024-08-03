@@ -19,9 +19,14 @@ with open(pickle_file_path, 'rb') as f:
 
 
 def train_model():
+  print(data.head())
 
   X = data[['Longitude', 'Latitude']]
-  y = data['accident_score']
+  print(X.head())
+  print(len(X))
+  y = data['accident_score'] 
+  print(y.head())
+  print(len(y))
   k = 100
   knn = KNeighborsRegressor(n_neighbors=k)
   knn.fit(X, y)
@@ -81,7 +86,8 @@ def calculate_point_danger(prediction_data):
     sz = len(dist[0])
     i = 0
     while i < sz:
-      di = data['accident_score'][ind[0][i]]
+    #   di = x_di[ind[0][i]]
+      di  = data['accident_score'].values[ind[0][i]]
       we = 1/(200*(dist[0][i] + 0.000000000001))
       if we > 2:  #Hyperparameter
         we = 2
