@@ -1,5 +1,7 @@
 # Decode the polyline string and return array of lat long pair
 
+import os
+from dotenv import load_dotenv
 import requests
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -16,17 +18,21 @@ with open(pickle_file_path, 'rb') as f:
 # x_di = data['accident_score'].values
 
 
+load_dotenv()
+
+# SECRET_KEY = os.getenv("API_KEY")
+
 
 
 def train_model():
-  print(data.head())
+#   print(data.head())
 
   X = data[['Longitude', 'Latitude']]
-  print(X.head())
-  print(len(X))
+#   print(X.head())
+#   print(len(X))
   y = data['accident_score'] 
-  print(y.head())
-  print(len(y))
+#   print(y.head())
+#   print(len(y))
   k = 100
   knn = KNeighborsRegressor(n_neighbors=k)
   knn.fit(X, y)
@@ -111,7 +117,7 @@ def get_directions(origin_lat,origin_long,dest_lat,dest_long):
     origin = origin_lat + ', ' + origin_long
     destination = dest_lat + ', ' + dest_long
 
-    API_KEY = 'AIzaSyBy45iq2jviV0N6f1HXK_FzyUag9apSsD4'
+    API_KEY = os.getenv("API_KEY")
     url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&alternatives=true&key={API_KEY}'
 
     response = requests.get(url)
