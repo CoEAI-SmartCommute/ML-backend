@@ -1,9 +1,8 @@
 from flask import Flask, Response, make_response, request, jsonify
-import joblib
 import numpy as np
 import pandas as pd
 from flask_cors import CORS
-from model import calculate_path_danger, calculate_point_danger, decode_polyline, get_directions
+from model import  calculate_point_danger, decode_polyline, get_directions
 import requests
 
 
@@ -11,19 +10,20 @@ app = Flask(__name__)
 CORS(app)
 
 # Load the saved kNN model
-joblib_file = "knn_model.pkl"
-knn_model = joblib.load(joblib_file)
+# joblib_file = "knn_model.pkl"
+# knn_model = joblib.load(joblib_file)
 
-# Load your data that contains 'accident_score'
-data = pd.read_csv('Data_Rapid_2019.csv')
-data['accident_score'] = (data['Death'] * 2) + (data['Grievous'] * 1.5) + (data['Minor'] * 0.5)
+# # Load your data that contains 'accident_score'
+# data = pd.read_csv('Data_Final.csv')
+# data['accident_score'] = (data['Death'] * 2) + (data['Grievous'] * 1.5) + (data['Minor'] * 0.5)
 
-# We will work on improving this calculation and taking more features into consideration
-data = data[data['accident_score'] != 0]
-x_di = data['accident_score'].values
+# # We will work on improving this calculation and taking more features into consideration
+# data = data[data['accident_score'] != 0]
+# x_di = data['accident_score'].values
 
 @app.route('/test')
 def test():
+    # knn_model.fit()
     return Response('{ "message":"Application is up and running"}', status=201, mimetype='application/json')
 
 @app.route('/predict', methods=['POST'])
@@ -40,10 +40,11 @@ def predict():
         prediction_data = np.array([[longitude, latitude]])
         
         # Get the nearest neighbors using the kNN model
-        distances, indices = knn_model.kneighbors(prediction_data)
+        # distances, indices = knn_model.kneighbors(prediction_data)
         
         # Calculate the danger score
-        danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di)
+        # danger_score = calculate_point_danger(longitude, latitude, distances, indices,x_di)
+        danger_score = calculate_point_danger(prediction_data)
         danger_score= 7-danger_score
         danger_score= np.minimum(10,danger_score*10/7)
         # Return the danger score as JSON
@@ -97,8 +98,8 @@ def getdirection():
             for a in lat_long_arr:
                 to_send = []
                 to_send.append(a)
-                dist,ind = knn_model.kneighbors(to_send)
-                temp = calculate_point_danger(a[0],a[1],dist,ind,x_di)
+                # dist,ind = knn_model.kneighbors(to_send)
+                temp = calculate_point_danger(to_send)
                 danger+=temp
             danger = danger/sz
             danger = 7-danger
