@@ -7,8 +7,7 @@ import requests
 import datetime
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel, Image
-# import os
-# from dotenv import load_dotenv
+
 
 
 app = Flask(__name__)
