@@ -12,111 +12,21 @@ from datetime import datetime
 
 pickle_file_path = 'array.pkl'
 
-with open(pickle_file_path, 'rb') as f:
-    data = pickle.load(f)
+# with open(pickle_file_path, 'rb') as f:
+#     data = pickle.load(f)
 
-load_dotenv()
+load_dotenv()      
 
-# SECRET_KEY = os.getenv("API_KEY")
+def import_data():
+    with open(pickle_file_path, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
+data = import_data()
+
 
 PROJECT_ID = os.getenv("PROJECT_ID")
-SYSTEM_INSTRUCT =  """{
-    "description": "Given a user input, extract details related to accidents or crimes and map them to the appropriate dataset fields. Return the result in JSON format.",
-    # "input_example": "A death happened in Calicut of a man of 30 years old.",
-    "schema": {
-        "type": "object",
-        "properties": {
-            "incident_type": {
-                "type": "string",
-                "description": "Type of the incident, e.g., 'crime' or 'accident'."
-            },
-            "age": {
-                "type": "integer",
-                "description": "Age of the person involved in the incident."
-            },
-            "gender": {
-                "type": "string",
-                "description": "Gender of the person involved."
-            },
-            "location": {
-                "type": "object",
-                "properties": {
-                    "latitude": {"type": "number"},
-                    "longitude": {"type": "number"}
-                },
-                "description": "Location details of the incident."
-            },
-            "death": {
-                "type": "boolean",
-                "description": "True if a death occurred, false otherwise."
-            },
-            "grievous": {
-                "type": "boolean",
-                "description": "True if grievous injuries occurred, false otherwise."
-            },
-            "minor": {
-                "type": "boolean",
-                "description": "True if minor injuries occurred, false otherwise."
-            },
-            "crime_details": {
-                "type": "object",
-                "properties": {
-                    "category": {"type": "string", "description": "Category of crime."},
-                    "type_of_crime": {"type": "string", "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."},
-                    "score": {"type": "integer", "description": "Severity score of the crime."}
-                },
-                "description": "Details about the crime if it applies."
-            },
-            "accident_details": {
-                "type": "object",
-                "properties": {
-                    "accident_type": {"type": "string", "description": "Type of accident."},
-                    "safety_device_used": {"type": "boolean", "description": "Whether a safety device was used."},
-                    "alcohol_involvement": {"type": "boolean", "description": "True if alcohol or drugs were involved, false otherwise."},
-                    "accident_score": {"type": "integer", "description": "Severity score of the accident."}
-                },
-                "description": "Details about the accident if it applies."
-            }
-        }
-    },
-    "output_example": {
-        "incident_type": "crime",
-        "age": 30,
-        "gender": "male",
-        "location": {
-            "latitude": 11.2588,
-            "longitude": 75.7804
-        },
-        "death": True,
-        "grievous": True,
-        "minor": False,
-        "crime_details": {
-            "category": "violent crime",
-            "type_of_crime": "murder",
-            "score": 85
-        }
-    }
-}"""
-
-
-
-
-# def train_model():
-# #   print(data.head())
-
-#   X = data[['Longitude', 'Latitude']]
-# #   print(X.head())
-# #   print(len(X))
-#   y = data['accident_score'] 
-# #   print(y.head())
-# #   print(len(y))
-#   k = 100
-#   knn = KNeighborsRegressor(n_neighbors=k)
-#   knn.fit(X, y)
-#   return knn
-
-
-# knn = train_model()
 
 def decode_polyline(encoded):
     if not encoded:
@@ -159,24 +69,6 @@ def decode_polyline(encoded):
 
     return poly
 
-# Calculate accident score for a give lat long point
-
-
-# def calculate_point_danger(prediction_data):
-
-#     dist, ind = knn.kneighbors(prediction_data)
-#     ans = 0
-#     sz = len(dist[0])
-#     i = 0
-#     while i < sz:
-#     #   di = x_di[ind[0][i]]
-#       di  = data['accident_score'].values[ind[0][i]]
-#       we = 1/(200*(dist[0][i] + 0.000000000001))
-#       if we > 2:  #Hyperparameter
-#         we = 2
-#       ans += di*we
-#       i+=1
-#     return ans/sz
 
 def calculate_danger_score(lat, lon, filtered_data=None, k=50):
     
@@ -328,8 +220,13 @@ def preprocess_and_calculate_scores():
     return data
 
 
-def update_data(new_data_values):
+def add_data(new_data_values):
     # Convert new data values to DataFrame
+    global data
+    print("hi")
+    print(data)
+    print("hi")
+    print(new_data_values)
     new_data = pd.DataFrame(new_data_values, columns=data.columns)
 
     # Ensure 'Date accident' is a datetime object in the new data

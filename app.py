@@ -2,7 +2,7 @@ from flask import Flask, Response, make_response, request, jsonify
 import numpy as np
 import pandas as pd
 from flask_cors import CORS
-from model import PROJECT_ID, SYSTEM_INSTRUCT, calculate_personalized_score, decode_polyline, get_directions, time_to_section
+from model import PROJECT_ID, calculate_personalized_score, decode_polyline, get_directions, time_to_section, add_data
 import requests
 import datetime
 import vertexai
@@ -103,94 +103,98 @@ def getdirection():
         return make_response(response, 500)
 
 
-# @app.route('/update_data', methods=['POST'])
-# def update_data():
-#     data = request.get_json(force=True)
-#     lat = str(data['latitude'])
-#     lng = str(data['longitude'])
+@app.route('/update_data', methods=['POST'])
+def update_data():
+    data = request.get_json(force=True)
+    lat = str(data['latitude'])
+    lng = str(data['longitude'])
 
-#     date = str(data['date'])
-#     time = str(data['time'])
-#     description = data['description']
+    date = str(data['date'])
+    time = str(data['time'])
+    description = data['description']
 
-#     REGION = "us-central1"
-#     vertexai.init(project=PROJECT_ID, location=REGION)
+    REGION = "us-central1"
+    vertexai.init(project=PROJECT_ID, location=REGION)
 
-#     generative_model = GenerativeModel("gemini-1.5-pro-001")
-#     response_schemas = {
-#         "type": "OBJECT",
-#         "properties": {
-#             "gender": {
-#                 "type": "STRING",
-#                 "description": "Gender of the person involved",
-#             },
-#             "incident_type": {
-#                 "type": "STRING",
-#                 "description": "Type of the incident, e.g., 'crime' or 'accident'."
-#             },
-#             "age": {
-#                 "type": "INTEGER",
-#                 "description": "Age of the person involved in the incident."
-#             },
-#             "death": {
-#                 "type": "INTEGER",
-#                 "description": "Number of people died in accident or crime."
-#             },
-#             "location": {
-#                 "type": "object",
-#                 "properties": {
-#                     "latitude": {"type": "number"},
-#                     "longitude": {"type": "number"}
-#                 },
-#                 "description": "Location details of the incident."
-#             },
-#             "grievous": {
-#                 "type": "boolean",
-#                 "description": "True if grievous injuries occurred, false otherwise."
-#             },
-#             "minor": {
-#                 "type": "boolean",
-#                 "description": "True if minor injuries occurred, false otherwise."
-#             },
-#             "accident_details": {
-#                 "type": "object",
-#                 "properties": {
-#                     "accident_type": {"type": "string", "description": "Severity of accident., e.g., Fatal or minor accident or grevious accident"},
-#                     "safety_device_used": {"type": "boolean", "description": "Whether a safety device was used."},
-#                     "alcohol_involvement": {"type": "boolean", "description": "True if alcohol or drugs were involved, false otherwise."},
-#                     # "accident_score": {"type": "integer", "description": "Severity score of the accident."}
-#                 },
-#                 "description": "Details about the accident if it applies."
-#             }
-#         },
-#         "required": ["age", "death", "grievous", "minor","accident_details"]
+    generative_model = GenerativeModel("gemini-1.5-pro-001")
+    response_schemas = {
+        "type": "OBJECT",
+        "properties": {
+            "gender": {
+                "type": "STRING",
+                "description": "Gender of the person involved",
+            },
+            "incident_type": {
+                "type": "STRING",
+                "description": "Type of the incident, e.g., 'crime' or 'accident'."
+            },
+            "age": {
+                "type": "INTEGER",
+                "description": "Age of the person involved in the incident."
+            },
+            "death": {
+                "type": "INTEGER",
+                "description": "Number of people died in accident or crime."
+            },
+            "location": {
+                "type": "object",
+                "properties": {
+                    "latitude": {"type": "number"},
+                    "longitude": {"type": "number"}
+                },
+                "description": "Location details of the incident."
+            },
+            "grievous": {
+                "type": "INTEGER",
+                "description": "Count of people who got serious injuries in accident."
+            },
+            "minor": {
+                "type": "boolean",
+                "description": "Count of people who got minor injuries in accident."
+            },
+            "accident_details": {
+                "type": "object",
+                "properties": {
+                    "accident_type": {"type": "string", "description": "Severity of accident., e.g., Fatal or minor accident or grevious accident"},
+                    "safety_device_used": {"type": "boolean", "description": "Whether a safety device was used."},
+                    "alcohol_involvement": {"type": "boolean", "description": "True if alcohol or drugs were involved, false otherwise."},
+                    # "accident_score": {"type": "integer", "description": "Severity score of the accident."}
+                },
+                "description": "Details about the accident if it applies."
+            }
+        },
+        "required": ["gender","age", "death", "grievous", "minor","accident_details"]
         
-#     }
-#     generation_configs = GenerationConfig(response_mime_type="application/json",response_schema=response_schemas)
+    }
+    generation_configs = GenerationConfig(response_mime_type="application/json",response_schema=response_schemas)
 
-#     try:
+    try:
 
-#         response = generative_model.generate_content(
-#             description, generation_config=generation_configs)
-#         desc_data = (json.loads(response.text))
-#         print(desc_data['death'])
-#         new_data_values =  {'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Minor Injury', 'Death': 0, 'Grievous': 0, 'Minor': 1,
-#              'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Afternoon', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},
+        response = generative_model.generate_content(
+            description, generation_config=generation_configs)
+        desc_data = (json.loads(response.text))
+        print(desc_data['gender'])
+        new_data_values = [ {'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Minor Injury', 'Death': 0, 'Grievous': 0, 'Minor': 1,
+             'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Afternoon', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},]
         
 
-#         new_data_values['Date accident'] = date
-#         new_data_values['Time accident'] = time
-#         new_data_values['Longitude'] = lng
-#         new_data_values['Latitude'] = lat
-#         time_section = time_to_section(time)
-#         new_data_values['time_section'] = time_section
-#         # new_data_values['Death'] = desc_data['death']?
-#         print("deepu")
-#         # update_data(new_data_values)
-#     except Exception as e:
-#         print(str(e)+"**")
+        new_data_values[0]['Date accident'] = date
+        new_data_values[0]['Time accident'] = time
+        new_data_values[0]['Longitude'] = lng
+        new_data_values[0]['Latitude'] = lat
+        time_section = time_to_section(time)
+        new_data_values[0]['time_section'] = time_section
+        new_data_values[0]['Death'] = desc_data['death']
+        new_data_values[0]['Grievous'] = desc_data['grievous']
+        new_data_values[0]['Minor'] = desc_data['minor']
+        new_data_values[0]['Gender'] = 'Female' if desc_data['gender'] == 'female' else 'Male'
+        # print("deepu")
+        add_data(new_data_values)
+        print("everything working")
+    except Exception as e:
+        print(str(e)+"**")
 
-#     return "Deepu", 200
+    return "Deepu", 200
 
 
 
