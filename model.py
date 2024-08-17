@@ -218,7 +218,7 @@ def calculate_danger_score(lat, lon, filtered_data=None, k=50):
         return 0
 
 
-def calculate_personalized_score(lat, lon, gender=None, time_section=None, k=40):
+def calculate_personalized_score(lat, lon, gender=None, time_section=None, k=10):
     # Filter data by gender and time section if specified
     filtered_data = data
     if gender:
@@ -236,12 +236,12 @@ def calculate_personalized_score(lat, lon, gender=None, time_section=None, k=40)
 
 
 
-def get_directions(origin_lat,origin_long,dest_lat,dest_long):
+def get_directions(origin_lat,origin_long,dest_lat,dest_long,travel_mode):
     origin = origin_lat + ', ' + origin_long
     destination = dest_lat + ', ' + dest_long
 
     API_KEY = os.getenv("API_KEY")
-    url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&alternatives=true&key={API_KEY}'
+    url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&mode={travel_mode}&alternatives=true&key={API_KEY}'
 
     response = requests.get(url)
     directions = response.json()
