@@ -1,237 +1,103 @@
-# Decode the polyline string and return array of lat long pair
-
-import os
-from dotenv import load_dotenv
-import requests
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsRegressor, NearestNeighbors
-import pickle
 import numpy as np
-from datetime import datetime
+import pickle
+from sklearn.neighbors import NearestNeighbors
+# from data import accident_data
+from increment import update_accident_data, update_crime_data
 
 pickle_file_path = 'array.pkl'
-
-# with open(pickle_file_path, 'rb') as f:
-#     data = pickle.load(f)
-
-load_dotenv()      
+pickle_file_path_crime = 'array2.pkl'
 
 def import_data():
     with open(pickle_file_path, 'rb') as f:
-        data = pickle.load(f)
-    return data
+        accident_data = pickle.load(f)
+    return accident_data
 
 
-data = import_data()
+def import_crime_data():
+    with open(pickle_file_path_crime, 'rb') as f:
+        crime_data = pickle.load(f)
+    return crime_data
 
 
-PROJECT_ID = os.getenv("PROJECT_ID")
+accident_data = import_data()
+crime_data = import_crime_data()
 
-def decode_polyline(encoded):
-    if not encoded:
-        return []
+def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_data, k=1):
+    accident_locations = filtered_accident_data[[
+        'Latitude', 'Longitude']].drop_duplicates().values
+    crime_locations = filtered_crime_data[[
+        'Latitude', 'Longitude']].drop_duplicates().values
 
-    poly = []
-    index = 0
-    lat = 0
-    lng = 0
-
-    while index < len(encoded):
-        b = shift = result = 0
-
-        while True:
-            b = ord(encoded[index]) - 63
-            index += 1
-            result |= (b & 0x1f) << shift
-            shift += 5
-            if b < 0x20:
-                break
-
-        dlat = ~(result >> 1) if result & 1 else (result >> 1)
-        lat += dlat
-
-        shift = result = 0
-
-        while True:
-            b = ord(encoded[index]) - 63
-            index += 1
-            result |= (b & 0x1f) << shift
-            shift += 5
-            if b < 0x20:
-                break
-
-        dlng = ~(result >> 1) if result & 1 else (result >> 1)
-        lng += dlng
+    accident_nbrs = NearestNeighbors(
+        n_neighbors=k, algorithm='ball_tree', metric='haversine').fit(np.radians(accident_locations))
+    crime_nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree', metric='haversine').fit(np.radians(crime_locations))
+    print(crime_nbrs)
+    print([[lat,lon]])
+    lat_lon_radians = np.radians([[lat, lon]])  
+    accident_distances, accident_indices = accident_nbrs.kneighbors(
+        lat_lon_radians)
 
 
-        poly.append([lng/1e5,lat/1e5])
+    crime_distances, crime_indices = crime_nbrs.kneighbors(lat_lon_radians)
 
-    return poly
+    acc_score = 0
+    sz = 40
 
-
-def calculate_danger_score(lat, lon, filtered_data=None, k=50):
-    
-    try:
-        
-      if filtered_data is None:
-        filtered_data = data
-
-      # print("deepu")
-    
-      locations = filtered_data[['Latitude', 'Longitude']].drop_duplicates().values
-      nbrs = NearestNeighbors(
-          n_neighbors=k, algorithm='ball_tree', metric='haversine').fit(locations)
-      distances, indices = nbrs.kneighbors([[lat, lon]])
-
-      
-      # nearest_scores = filtered_data.iloc[indices[0]]['accident_score']
-      # return distances,nearest_scores
-      # print(distances)
-      ans = 0
-      sz = len(distances[0])
-      # print(sz)
-      i = 0
-      while i < sz:
-        # di = x_di[ind[0][i]]
-        di  = filtered_data['accident_score'].values[indices[0][i]]
-        # di = nearest_scores[0][i]
-        # print("Timus")
-        we = 1/(200*(distances[0][i] + 0.00000000000001))
-        if we > 2:  #Hyperparameter
-          we = 2
-        ans = ans + di*we
+    i = 0
+    while i < sz:  
+        di = filtered_accident_data['accident_score'].values[accident_indices[0][i]]
+        we = 1/(100*(accident_distances[0][i] + 0.00000000000001))
+        if we > 2:  
+            we = 2
+        acc_score = acc_score + di*we
         i = i+1
-      
-      # print("hi" + ans/sz)
-      return ans/sz
-    except Exception as e:
-        print(str(e) + "deepu")
-        return 0
 
+    i=0
+    crime_score=0
+    while i < 10:
+        di = filtered_crime_data['crime_score'].values[crime_indices[0][i]]
+        we = 1/(100*(crime_distances[0][i] + 0.00000000000001))
+        if we > 2:  
+            we = 2
+        crime_score = crime_score + di*we
+        i = i+1
 
-def calculate_personalized_score(lat, lon, gender=None, time_section=None, k=10):
-    # Filter data by gender and time section if specified
-    filtered_data = data
+    crime_score = crime_score/sz
+    acc_score = acc_score/sz
+    combined_score = (crime_score + acc_score) / 2
+    print(combined_score)
+    return combined_score,crime_score,acc_score
+
+def filter_data(gender,time_section):
+    filtered_accident_data = accident_data
+    filtered_crime_data = crime_data
     if gender:
-        # print(gender)
-        filtered_data = filtered_data[filtered_data['Gender'].str.lower() == gender.lower()]
+        filtered_accident_data = filtered_accident_data[filtered_accident_data['Gender'].str.lower(
+        ) == gender.lower()]
+        filtered_crime_data = filtered_crime_data[filtered_crime_data['Gender'].str.lower(
+        ) == gender.lower()]
+
     if time_section:
-        # print(time_section)
-        filtered_data = filtered_data[filtered_data['time_section'] == time_section]
-    if filtered_data.empty:
+        filtered_accident_data = filtered_accident_data[
+            filtered_accident_data['time_section'] == time_section]
+        filtered_crime_data = filtered_crime_data[filtered_crime_data['time_section'] == time_section]
+
+    if filtered_accident_data.empty or filtered_crime_data.empty:
         print("No data available for the specified gender or time section.")
         return np.nan
-    # print(filtered_data)
-    # Use filtered data to calculate danger score
-    return calculate_danger_score(lat, lon, filtered_data, k)
+    
+    return filtered_accident_data, filtered_crime_data
 
 
 
-def get_directions(origin_lat,origin_long,dest_lat,dest_long,travel_mode):
-    origin = origin_lat + ', ' + origin_long
-    destination = dest_lat + ', ' + dest_long
-
-    API_KEY = os.getenv("API_KEY")
-    url = f'https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&mode={travel_mode}&alternatives=true&key={API_KEY}'
-
-    response = requests.get(url)
-    directions = response.json()
-    return directions
-
-accident_type_weightage = {
-    'Fatal': 4,
-    'Grevious Injury': 3,
-    'Minor Injury': 2,
-    'Non Injury': 1,
-    np.nan: 0  # Assign a weightage for NaN if needed
-}
-safety_device_weights = {
-    'Without wearing seatbelt': 2,
-    'Without wearing Helmet': 2,
-    'Seat Belt': 0,
-    'Wearing Helmet': 0
-}
-
-alcohol_drugs_weights = {
-    'yes': 3,
-    'no': 0,
-    'UpdateLater': 0,
-    'Yes': 3
-}
+def data_update(new_data_value):
+    global accident_data
+    accident_data = update_accident_data(accident_data,new_data_value)
 
 
 
-def time_to_section(time_strs):
-    time_str = str(time_strs)
-    if isinstance(time_str, str):  # Ensure time_str is a string
-        try:
-            # Convert time to a datetime object
-            # print(time_str)
-            time_obj = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f').time()
-            # Define time sections
-            # print(time_obj)
-            if time_obj >= datetime.strptime('07:00:00', '%H:%M:%S').time() and time_obj < datetime.strptime('19:00:00', '%H:%M:%S').time():
-                return 'Morning'
-            else:
-                return 'Night'
-        except ValueError:
-            # print("wrong2")
-            return None  
-    else:
-        # print("wrong")
-        return None  
+def data_update_crime(new_data_value):
+    global crime_data
+    crime_data = update_crime_data(crime_data,new_data_value)
 
-# accident_score_data['Date accident'] = pd.to_datetime(accident_score_data['Date accident'], errors='coerce')
-
-
-def calculate_age_weightage(date, interval_months=3):
-  # Ensure the date is valid
-  current_date = datetime.now()
-  if pd.isna(date):
-      return 0  # Assign zero weightage for invalid dates
-  # Calculate the difference in months between the accident date and the current date
-  months_difference = (current_date.year - date.year) *12 + current_date.month - date.month
-  # Calculate weightage: more recent dates have higher weightage
-  weightage = 1 / ((months_difference // interval_months) + 1)
-  return weightage
-
-def preprocess_and_calculate_scores():
-    # Ensure 'Date accident' is a datetime object
-    # self.data['Date accident'] = pd.to_datetime(self.data['Date accident'], errors='coerce')
-
-    # Calculate age weightage for each accident
-    data['age_weightage'] = data['Date accident'].apply(lambda x: calculate_age_weightage(x))
-
-    # Map accident type to weightages
-    data['accident_type_weightage'] = data['Accident type'].map(accident_type_weightage)
-
-    # Calculate score based on accident type weightage and age weightage
-    data['individual_score'] = (
-        (data['accident_type_weightage'] + (data['Death']* 5) + (data['Grievous']*3) + (data['Minor']*2))* data['age_weightage']
-    )
-
-    # Group by latitude and longitude
-    grouped = data.groupby(['Latitude', 'Longitude'])
-
-    # Calculate average score for each group
-    data['accident_score'] = grouped['individual_score'].transform('mean')
-
-    return data
-
-
-def add_data(new_data_values):
-    # Convert new data values to DataFrame
-    global data
-    print("hi")
-    print(data)
-    print("hi")
-    print(new_data_values)
-    new_data = pd.DataFrame(new_data_values, columns=data.columns)
-
-    # Ensure 'Date accident' is a datetime object in the new data
-    new_data['Date accident'] = pd.to_datetime(new_data['Date accident'], errors='coerce')
-
-    # Append new data and recalculate scores
-    data = pd.concat([data, new_data], ignore_index=True)
-    preprocess_and_calculate_scores()
