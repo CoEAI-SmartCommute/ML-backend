@@ -74,7 +74,7 @@ def getdirection():
             return make_response(response, 500)
 
         result = []
-        uid = 1
+        # uid = 1
         current_time = datetime.datetime.now()
         time_section = time_to_section(current_time)
         for r in direction_polylines:
@@ -99,19 +99,15 @@ def getdirection():
             crime_score = crime_score/sz
             acc_score = acc_score/sz
 
-            # danger = 7-danger
-            # crime_score = 7-crime_score
-            # acc_score = 7-acc_score
-
-            # danger = np.minimum(10, danger*10/7)
-            # crime_score = np.minimum(10, crime_score*10/7)
-            # acc_score = np.minimum(10, acc_score*10/7)
-
-            result.append({"id": uid, "polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score":crime_score, "accident_score":acc_score,
+            result.append({"polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score":crime_score, "accident_score":acc_score,
                           "duration": r['duration'], "distance": r['distance']})
-            uid += 1
+            # uid += 1
         
         result_sorted = sorted(result, key=lambda x: x['safety_score'], reverse=True)
+        uuid=1
+        for path in result_sorted:
+            path['id'] = uuid
+            uuid+=1
         response = jsonify(result_sorted)
         return make_response(response, 200)
     except Exception as e:
