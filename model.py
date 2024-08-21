@@ -30,16 +30,14 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
         'Latitude', 'Longitude']].drop_duplicates().values
 
     accident_nbrs = NearestNeighbors(
-        n_neighbors=k, algorithm='ball_tree', metric='haversine').fit(np.radians(accident_locations))
-    crime_nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree', metric='haversine').fit(np.radians(crime_locations))
-    print(crime_nbrs)
-    print([[lat,lon]])
-    lat_lon_radians = np.radians([[lat, lon]])  
-    accident_distances, accident_indices = accident_nbrs.kneighbors(
-        lat_lon_radians)
+        n_neighbors=k, algorithm='ball_tree', metric='haversine').fit(accident_locations)
+    crime_nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree', metric='haversine').fit(crime_locations)
+    # print(crime_nbrs)
+    # print([[lat,lon]])
+    # lat_lon_radians = np.radians([[lat, lon]])  
+    accident_distances, accident_indices = accident_nbrs.kneighbors([[lat, lon]])
 
-
-    crime_distances, crime_indices = crime_nbrs.kneighbors(lat_lon_radians)
+    crime_distances, crime_indices = crime_nbrs.kneighbors([[lat, lon]])
 
     acc_score = 0
     sz = 40
@@ -66,12 +64,13 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
     crime_score = crime_score/sz
     acc_score = acc_score/sz
     combined_score = (crime_score + acc_score) / 2
-    print(combined_score)
+    # print(combined_score)
     return combined_score,crime_score,acc_score
 
 def filter_data(gender,time_section):
     filtered_accident_data = accident_data
     filtered_crime_data = crime_data
+    # print(len(filtered_accident_data))
     if gender:
         filtered_accident_data = filtered_accident_data[filtered_accident_data['Gender'].str.lower(
         ) == gender.lower()]
@@ -84,7 +83,7 @@ def filter_data(gender,time_section):
         filtered_crime_data = filtered_crime_data[filtered_crime_data['time_section'] == time_section]
 
     if filtered_accident_data.empty or filtered_crime_data.empty:
-        print("No data available for the specified gender or time section.")
+        # print("No data available for the specified gender or time section.")
         return np.nan
     
     return filtered_accident_data, filtered_crime_data
@@ -93,7 +92,9 @@ def filter_data(gender,time_section):
 
 def data_update(new_data_value):
     global accident_data
+    # print(len(accident_data))
     accident_data = update_accident_data(accident_data,new_data_value)
+    # print(len(accident_data))
 
 
 

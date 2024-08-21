@@ -29,16 +29,18 @@ def time_to_section(time_strs):
 
             time_obj = datetime.strptime(
                 time_str, '%Y-%m-%d %H:%M:%S.%f').time()
+            print(time_obj)
+            print(time_str)
 
             if time_obj >= datetime.strptime('07:00:00', '%H:%M:%S').time() and time_obj < datetime.strptime('19:00:00', '%H:%M:%S').time():
                 return 'Morning'
             else:
                 return 'Night'
         except ValueError:
-
+            print(time_str)
             return None
     else:
-
+        # print(time_str)
         return None
 
 
@@ -112,7 +114,7 @@ def update_crime_data(crime_data, new_crime_values):
     new_data = pd.DataFrame(new_crime_values, columns=crime_data.columns)
 
     # Ensure 'Date' is a datetime object in the new data
-    new_data['Date of Report'] = pd.to_datetime(new_data['Date of Report'], format='%d-%m-%Y')
+    new_data['Date of Report'] = pd.to_datetime(new_data['Date of Report'], errors='coerce')
 
     # Append new data and recalculate scores
     crime_data = pd.concat([crime_data, new_data], ignore_index=True)

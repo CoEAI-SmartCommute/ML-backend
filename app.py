@@ -2,7 +2,6 @@ from flask import Flask, Response, make_response, request, jsonify
 import numpy as np
 import pandas as pd
 from flask_cors import CORS
-import requests
 import datetime
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel, GenerationConfig
@@ -42,14 +41,14 @@ def predict():
         crime_score = np.minimum(10, crime_score*10/7)
         acc_score = np.minimum(10, acc_score*10/7)
 
-        print(combined_score)
-        print(crime_score)
-        print(acc_score)
+        # print(combined_score)
+        # print(crime_score)
+        # print(acc_score)
 
         response = jsonify({'safety_score': combined_score,'crime-score': crime_score, "accident_score":acc_score})
         return make_response(response, 200)
     except Exception as e:
-        print(e)
+        # print(e)
         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
 
 
@@ -164,7 +163,7 @@ def update_data():
                 "description": "Count of people who got serious injuries in accident."
             },
             "minor": {
-                "type": "boolean",
+                "type": "INTEGER",
                 "description": "Count of people who got minor injuries in accident."
             },
             "accident_details": {
@@ -176,9 +175,17 @@ def update_data():
                     
                 },
                 "description": "Details about the accident if it applies."
-            }
+            },
+            "crime_details": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "description": "Category of crime."},
+                    "type_of_crime": {"type": "string", "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."},
+                },
+                "description": "Details about the accident if it applies."
+            },
         },
-        "required": ["gender","age", "death", "grievous", "minor","accident_details"]
+        "required": ["gender", "age", "death", "grievous", "minor", "accident_details", "crime_details"]
         
     }
     generation_configs = GenerationConfig(response_mime_type="application/json",response_schema=response_schemas)
@@ -190,8 +197,9 @@ def update_data():
         desc_data = (json.loads(response.text))
 
         if (desc_data['incident_type']=='accident'):
+            # print("accident")
             new_data_values = [{'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Minor Injury', 'Death': 0, 'Grievous': 0, 'Minor': 1,
-                    'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Afternoon', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},]
+                    'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Night', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},]
             
 
             new_data_values[0]['Date accident'] = date
@@ -199,6 +207,7 @@ def update_data():
             new_data_values[0]['Longitude'] = lng
             new_data_values[0]['Latitude'] = lat
             time_section = time_to_section(time)
+            print(time_section)
             new_data_values[0]['time_section'] = time_section
             new_data_values[0]['Death'] = desc_data['death']
             new_data_values[0]['Grievous'] = desc_data['grievous']
@@ -208,8 +217,19 @@ def update_data():
             data_update(new_data_values)
 
         else:
-            new_data_value=[]
-            data_update_crime(new_data_value)
+            # print("crime")
+            new_data_value = [
+                {'Date of Report': '2024-08-01', 'Time of Report': '15:30:00', 'Gender': 'Male', 'Age': 18, 'Latitude': 11.280500, 'Longitude': 75.819000, 'Category': 'Uncategorized', 'time_section': 'Night', 'age_weightage': 0, 'crime_category_weightage': 0, 'crime_score': 0}]
+            new_data_value[0]['Date of Report'] = date
+            new_data_value[0]['Time of Report'] = time  
+            time_section = time_to_section(time) 
+            new_data_value[0]['time_section'] = time_section
+            new_data_value[0]['Latitude'] = lat
+            new_data_value[0]['Longitude'] = lng
+            new_data_value[0]['Gender'] = 'Female' if desc_data['gender'] == 'female' else 'Male'
+                
+            # print(desc_data['crime_details']) 
+            # data_update_crime(new_data_value)
             
     except Exception as e:
         return "Fail, "+str(e),404
