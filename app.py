@@ -31,21 +31,16 @@ def predict():
         time_section = time_to_section(current_time)
 
         filtered_accident_data, filtered_crime_data = filter_data(None,time_section)
-        combined_score, crime_score, acc_score = calculate_combined_score(latitude, longitude, filtered_accident_data, filtered_crime_data, 40)
+        crime_score, acc_score = calculate_combined_score(latitude, longitude, filtered_accident_data, filtered_crime_data, 40)
 
+        if acc_score > 0.0358:
+            acc_score =  (1 - ((acc_score-0.0357)/(6-0.0357)))*10
+        else:
+            acc_score=10
+        # crime_score = (1-((crime_score-4)/(6.122-4)))*10
+        crime_score = (6.122-crime_score)*10/6.123
 
-        combined_score = 7-combined_score
-        crime_score = 7-crime_score
-        acc_score = 7-acc_score
-        combined_score = np.minimum(10, combined_score*10/7)
-        crime_score = np.minimum(10, crime_score*10/7)
-        acc_score = np.minimum(10, acc_score*10/7)
-
-        # print(combined_score)
-        # print(crime_score)
-        # print(acc_score)
-
-        response = jsonify({'safety_score': combined_score,'crime-score': crime_score, "accident_score":acc_score})
+        response = jsonify({'safety_score': (acc_score+crime_score)/2,'crime-score': crime_score, "accident_score":acc_score})
         return make_response(response, 200)
     except Exception as e:
         # print(e)
@@ -85,32 +80,39 @@ def getdirection():
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
             sz = len(lat_long_arr)
-            danger = 0
+            # danger = 0
             crime_score=0
             acc_score=0
             for a in lat_long_arr:
                 filtered_accident_data, filtered_crime_data = filter_data(None,time_section)
-                temp1, temp2, temp3 = calculate_combined_score(a[1], a[0], filtered_accident_data, filtered_crime_data, 40)
-                danger += temp1
+                temp2, temp3 = calculate_combined_score(a[1], a[0], filtered_accident_data, filtered_crime_data, 40)
+                # danger += temp1
+                if temp3 > 0.0358:
+                    temp3 = (1 - ((temp3-0.0357)/(6-0.0357)))*10
+                else:
+                    temp3 = 10
+                temp2 = (6.122-temp2)*10/6.123
                 crime_score+=temp2
                 acc_score+=temp3
 
-            danger = danger/sz
+            # danger = danger/sz
             crime_score = crime_score/sz
             acc_score = acc_score/sz
 
-            danger = 7-danger
-            crime_score = 7-crime_score
-            acc_score = 7-acc_score
+            # danger = 7-danger
+            # crime_score = 7-crime_score
+            # acc_score = 7-acc_score
 
-            danger = np.minimum(10, danger*10/7)
-            crime_score = np.minimum(10, crime_score*10/7)
-            acc_score = np.minimum(10, acc_score*10/7)
+            # danger = np.minimum(10, danger*10/7)
+            # crime_score = np.minimum(10, crime_score*10/7)
+            # acc_score = np.minimum(10, acc_score*10/7)
 
-            result.append({"id": uid, "polyline": r['polyline'], "safety_score": danger, "crime_score":crime_score, "accident_score":acc_score,
+            result.append({"id": uid, "polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score":crime_score, "accident_score":acc_score,
                           "duration": r['duration'], "distance": r['distance']})
             uid += 1
-            response = jsonify(result)
+        
+        result_sorted = sorted(result, key=lambda x: x['safety_score'], reverse=True)
+        response = jsonify(result_sorted)
         return make_response(response, 200)
     except Exception as e:
         response = jsonify({"message": e})
