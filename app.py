@@ -9,6 +9,8 @@ import json
 from increment import time_to_section
 from model import calculate_combined_score, data_update, data_update_crime, filter_data
 from gmap import PROJECT_ID, decode_polyline, get_directions
+import os
+
 
 app = Flask(__name__)
 CORS(app)
@@ -99,8 +101,7 @@ def getdirection():
             crime_score = crime_score/sz
             acc_score = acc_score/sz
 
-            result.append({"polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score":crime_score, "accident_score":acc_score,
-                          "duration": r['duration'], "distance": r['distance']})
+            result.append({"polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score":crime_score, "accident_score":acc_score,"duration": r['duration'], "distance": r['distance']})
             # uid += 1
         
         result_sorted = sorted(result, key=lambda x: x['safety_score'], reverse=True)
@@ -190,6 +191,8 @@ def update_data():
 
     try:
 
+        service_account_key_path = '/saarthi-429006-97416278fc6d.json'
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_key_path
         response = generative_model.generate_content(
             description, generation_config=generation_configs)
         desc_data = (json.loads(response.text))
@@ -205,7 +208,7 @@ def update_data():
             new_data_values[0]['Longitude'] = lng
             new_data_values[0]['Latitude'] = lat
             time_section = time_to_section(time)
-            print(time_section)
+            # print(time_section)
             new_data_values[0]['time_section'] = time_section
             new_data_values[0]['Death'] = desc_data['death']
             new_data_values[0]['Grievous'] = desc_data['grievous']
