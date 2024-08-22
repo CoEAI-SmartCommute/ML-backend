@@ -178,7 +178,7 @@ def getdirection():
             acc_score = 0
             cnt=0;
             # i=0
-            for i in range(1,sz):
+            for i in range(1,sz,10):
                 cnt = cnt+1
                 temp2, temp3 = calculate_combined_score(
                     lat_long_arr[i][1], lat_long_arr[i][0], filtered_accident_data, filtered_crime_data, 40)
