@@ -83,7 +83,7 @@ def preprocess_and_calculate_crime_scores(crime_data):
     # Map crime category to weightages
     crime_data['crime_category_weightage'] = crime_data['Category'].map(crime_category_weightage)
 
-    # Calculate score based on crime category weightage and age weightage
+    # Calculate score based on crime category wei  ghtage and age weightage
     crime_data['crime_score'] = (
         crime_data['crime_category_weightage'] *
         crime_data['age_weightage']

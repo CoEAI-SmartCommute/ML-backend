@@ -39,43 +39,40 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
 
     crime_distances, crime_indices = crime_nbrs.kneighbors([[lat, lon]])
 
-    # acc_score = 0
-    # sz = 40
-    di = filtered_accident_data['accident_score'].values[accident_indices[0]]
-    acc_score = np.mean(di)
-    ci = filtered_crime_data['crime_score'].values[crime_indices[0]]
-    crime_score = np.mean(ci)
+    acc_score = 0
+    sz = 40
+    # acc_score = np.mean(di)
+    # ci = filtered_crime_data['crime_score'].values[crime_indices[0]]
+    # crime_score = np.mean(ci)
 
-    # i = 0
-    # temp=0
-    # while i < sz:  
-    #     # we = 1/(200)
-    #     if accident_distances[0][i]==0:
-    #         we=1
-    #     else:
-    #         we = we*(1/accident_distances[0][i])
+    i = 0
+    while i < sz:  
+        di = filtered_accident_data['accident_score'].values[accident_indices[0][i]]
+        we = 1/(200)
+        if accident_distances[0][i]==0:
+            we=1
+        else:
+            we = we*(1/accident_distances[0][i])
             
-        # we2 = np.exp(-0.01 * accident_distances[0][i])
-        # temp = temp+we2
-        # if we > 2:  
-        #     we = 2
-        # acc_score = acc_score + di*we
+        if we > 2:  
+            we = 2
+        acc_score = acc_score + di*we
         # acc_score = acc_score + di*we2
-        # i = i+1
+        i = i+1
 
     # acc_score = acc_score/temp
-    # i=0
-    # crime_score=0
-    # while i < 10:
-    #     di = filtered_crime_data['crime_score'].values[crime_indices[0][i]]
-    #     we = 1/(200*(crime_distances[0][i] + 0.00000000000001))
-    #     if we > 2:  
-    #         we = 2
-    #     crime_score = crime_score + di*we
-    #     i = i+1
+    i=0
+    crime_score=0
+    while i < 10:
+        di = filtered_crime_data['crime_score'].values[crime_indices[0][i]]
+        we = 1/(200*(crime_distances[0][i] + 0.00000000000001))
+        if we > 2:  
+            we = 2
+        crime_score = crime_score + di*we
+        i = i+1
 
-    # crime_score = crime_score/10
-    # acc_score = acc_score/sz
+    crime_score = crime_score/10
+    acc_score = acc_score/sz
     # print(acc_score)
     # print(crime_score)
     # print(crime_score)
@@ -106,9 +103,9 @@ def filter_data(gender,time_section):
 
 def data_update(new_data_value):
     global accident_data
-    # print(len(accident_data))
+    print(len(accident_data))
     accident_data = update_accident_data(accident_data,new_data_value)
-    # print(len(accident_data))
+    print(len(accident_data))
 
 
 
