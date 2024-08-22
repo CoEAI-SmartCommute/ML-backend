@@ -10,6 +10,7 @@ from increment import time_to_section
 from model import calculate_combined_score, data_update, data_update_crime, filter_data
 from gmap import PROJECT_ID, decode_polyline, get_directions
 import os
+import time
 
 sysprompt = """You are required to generate a JSON response that strictly adheres to the following schema. All outputs must conform exactly to this structure, including the types and descriptions of each field.
 json
@@ -111,20 +112,20 @@ def predict():
         current_time = datetime.datetime.now()
         time_section = time_to_section(current_time)
 
-        filtered_accident_data, filtered_crime_data = filter_data(
+        filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(
             None, time_section)
         crime_score, acc_score = calculate_combined_score(
             latitude, longitude, filtered_accident_data, filtered_crime_data, 40)
 
         if acc_score > 0.0358:
-            acc_score = (1 - ((acc_score-0.0357)/(6-0.0357)))*10
+            acc_score = (1 - ((acc_score-0.035)/(max(accident_data['accident_score'].values)-0.035)))*10
         else:
             acc_score = 10
         # crime_score = (1-((crime_score-4)/(6.122-4)))*10
-        crime_score = (6.122-crime_score)*10/6.123
+        crime_score = (max(crime_data['crime_score'].values) - crime_score)*10/max(crime_data['crime_score'].values)
 
         response = jsonify({'safety_score': (acc_score+crime_score)/2,
-                           'crime-score': crime_score, "accident_score": acc_score})
+                           'crime_score': crime_score, "accident_score": acc_score})
         return make_response(response, 200)
     except Exception as e:
         # print(e)
@@ -143,8 +144,13 @@ def getdirection():
         gender = data['gender']
         travel_mode = data['travel_mode']
 
+        start  =time.time()
         directions = get_directions(
             origin_lat, origin_long, dest_lat, dest_long, travel_mode)
+        
+        end  = time.time()
+
+        print(end-start)
 
         direction_polylines = []
         if directions['status'] == 'OK':
@@ -162,31 +168,42 @@ def getdirection():
         # uid = 1
         current_time = datetime.datetime.now()
         time_section = time_to_section(current_time)
+        filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(None, time_section)
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
             sz = len(lat_long_arr)
+            print(sz)
             # danger = 0
             crime_score = 0
             acc_score = 0
-            for a in lat_long_arr:
-                filtered_accident_data, filtered_crime_data = filter_data(
-                    None, time_section)
+            cnt=0;
+            # i=0
+            for i in range(1,sz):
+                cnt = cnt+1
                 temp2, temp3 = calculate_combined_score(
-                    a[1], a[0], filtered_accident_data, filtered_crime_data, 40)
+                    lat_long_arr[i][1], lat_long_arr[i][0], filtered_accident_data, filtered_crime_data, 40)
                 # danger += temp1
                 if temp3 > 0.0358:
-                    temp3 = (1 - ((temp3-0.0357)/(6-0.0357)))*10
+                    temp3 = (
+                        1 - ((temp3-0.0357)/((max(accident_data['accident_score'].values))-0.0357)))*10
                 else:
                     temp3 = 10
-                temp2 = (6.122-temp2)*10/6.123
+                temp2 = (max(crime_data['crime_score'].values) -temp2)*10/max(crime_data['crime_score'].values)
                 crime_score += temp2
                 acc_score += temp3
+                # i += 10 if sz >= 100 else 5
 
             # danger = danger/sz
-            crime_score = crime_score/sz
-            acc_score = acc_score/sz
+            crime_score = crime_score/cnt
+            acc_score = acc_score/cnt
+            combined_score=0
+            if travel_mode=='walking':
+                combined_score = 0.6*crime_score + 0.4*acc_score
+            else:
+                combined_score = 0.6*acc_score + 0.4*crime_score
 
-            result.append({"polyline": r['polyline'], "safety_score": (crime_score+acc_score)/2, "crime_score": crime_score,
+
+            result.append({"polyline": r['polyline'], "safety_score": combined_score, "crime_score": crime_score,
                           "accident_score": acc_score, "duration": r['duration'], "distance": r['distance']})
             # uid += 1
 

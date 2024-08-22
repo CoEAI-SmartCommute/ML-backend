@@ -28,13 +28,12 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
         'Latitude', 'Longitude']].drop_duplicates().values
     crime_locations = filtered_crime_data[[
         'Latitude', 'Longitude']].drop_duplicates().values
+    
+    # print(crime_locations.shape)
 
     accident_nbrs = NearestNeighbors(
         n_neighbors=k, algorithm='ball_tree', metric='haversine').fit(accident_locations)
     crime_nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree', metric='haversine').fit(crime_locations)
-    # print(crime_nbrs)
-    # print([[lat,lon]])
-    # lat_lon_radians = np.radians([[lat, lon]])  
     accident_distances, accident_indices = accident_nbrs.kneighbors([[lat, lon]])
 
     crime_distances, crime_indices = crime_nbrs.kneighbors([[lat, lon]])
@@ -46,6 +45,14 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
     # crime_score = np.mean(ci)
 
     i = 0
+    # accident_distances[0] = 
+    # accident_distances[0][accident_distances[0] == 0] = 1.0/200
+
+    # accident_distances[0] = accident_distances[0]*200
+    # accident_distances[0] = 1/accident_distances[0]
+    # accident_distances[0][accident_distances[0] > 2.0] = 2.0
+    # ccc = filtered_accident_data['accident_score'].values[accident_indices[0]]*accident_distances[0]
+    # acc_score = np.mean(ccc)
     while i < sz:  
         di = filtered_accident_data['accident_score'].values[accident_indices[0][i]]
         we = 1/(200)
@@ -54,34 +61,37 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
         else:
             we = we*(1/accident_distances[0][i])
             
-        if we > 2:  
+        if we > 2.0:  
             we = 2
         acc_score = acc_score + di*we
-        # acc_score = acc_score + di*we2
         i = i+1
 
-    # acc_score = acc_score/temp
     i=0
     crime_score=0
     while i < 10:
         di = filtered_crime_data['crime_score'].values[crime_indices[0][i]]
-        we = 1/(200*(crime_distances[0][i] + 0.00000000000001))
-        if we > 2:  
+        we = 1/(200)
+        if crime_distances[0][i] == 0:
+            we = 1
+        else:
+            we = we*(1/crime_distances[0][i])
+
+        if we > 2.0:
             we = 2
         crime_score = crime_score + di*we
         i = i+1
 
     crime_score = crime_score/10
     acc_score = acc_score/sz
+
+    # print(crime_score)
     # print(acc_score)
-    # print(crime_score)
-    # print(crime_score)
     return crime_score,acc_score
 
 def filter_data(gender,time_section):
     filtered_accident_data = accident_data
     filtered_crime_data = crime_data
-    # print(len(filtered_accident_data))
+
     if gender:
         filtered_accident_data = filtered_accident_data[filtered_accident_data['Gender'].str.lower(
         ) == gender.lower()]
@@ -97,7 +107,7 @@ def filter_data(gender,time_section):
         # print("No data available for the specified gender or time section.")
         return np.nan
     
-    return filtered_accident_data, filtered_crime_data
+    return filtered_accident_data, filtered_crime_data, accident_data, crime_data
 
 
 
