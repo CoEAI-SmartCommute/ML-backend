@@ -76,8 +76,8 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
 
     # crime_score = crime_score/10
     # acc_score = acc_score/sz
-    print(acc_score)
-    print(crime_score)
+    # print(acc_score)
+    # print(crime_score)
     # print(crime_score)
     return crime_score,acc_score
 

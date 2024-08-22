@@ -191,8 +191,8 @@ def update_data():
 
     try:
 
-        service_account_key_path = '/saarthi-429006-97416278fc6d.json'
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_key_path
+        # service_account_key_path = '/saarthi-429006-97416278fc6d.json'
+        # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_key_path
         response = generative_model.generate_content(
             description, generation_config=generation_configs)
         desc_data = (json.loads(response.text))
