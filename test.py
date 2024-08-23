@@ -1,6 +1,6 @@
 import pickle
 
-pickle_file_path = 'array2.pkl'
+pickle_file_path = 'array.pkl'
 
 
 
@@ -11,4 +11,5 @@ def import_data():
 
 
 a = import_data()
-print(max(a['crime_score'].values))
+# print(max(a['crime_score'].values))
+print(a['time_section'])

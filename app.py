@@ -11,88 +11,89 @@ from model import calculate_combined_score, data_update, data_update_crime, filt
 from gmap import PROJECT_ID, decode_polyline, get_directions
 import os
 import time
+from datetime import datetime
 
-sysprompt = """You are required to generate a JSON response that strictly adheres to the following schema. All outputs must conform exactly to this structure, including the types and descriptions of each field.
-json
-{
-    "type": "OBJECT",
-    "properties": {
-        "gender": {
-            "type": "STRING",
-            "description": "Gender of the person involved"
-        },
-        "incident_type": {
-            "type": "STRING",
-            "description": "Type of the incident, e.g., 'crime' or 'accident'."
-        },
-        "age": {
-            "type": "INTEGER",
-            "description": "Age of the person involved in the incident."
-        },
-        "death": {
-            "type": "INTEGER",
-            "description": "Number of people who died in the accident or crime."
-        },
-        "location": {
-            "type": "object",
-            "properties": {
-                "latitude": { "type": "number" },
-                "longitude": { "type": "number" }
-            },
-            "description": "Location details of the incident."
-        },
-        "grievous": {
-            "type": "INTEGER",
-            "description": "Count of people who got serious injuries in the accident."
-        },
-        "minor": {
-            "type": "INTEGER",
-            "description": "Count of people who got minor injuries in the accident."
-        },
-        "accident_details": {
-            "type": "object",
-            "properties": {
-                "accident_type": { 
-                    "type": "string", 
-                    "description": "Severity of accident, e.g., Fatal or minor accident or grievous accident."
-                },
-                "safety_device_used": {
-                    "type": "boolean",
-                    "description": "Whether a safety device was used."
-                },
-                "alcohol_involvement": {
-                    "type": "boolean",
-                    "description": "True if alcohol or drugs were involved, false otherwise."
-                }
-            },
-            "description": "Details about the accident if it applies."
-        },
-        "crime_details": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string",
-                    "description": "Category of crime."
-                },
-                "type_of_crime": {
-                    "type": "string",
-                    "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."
-                }
-            },
-            "description": "Details about the crime if it applies."
-        }
-    },
-    "required": [
-        "gender", 
-        "age", 
-        "death", 
-        "grievous", 
-        "minor", 
-        "accident_details", 
-        "crime_details"
-    ]
-}
-Note: Ensure that each output adheres to this structure, with the correct data types and descriptions. Any response not matching this format will be considered incorrect."""
+# sysprompt = """You are required to generate a JSON response that strictly adheres to the following schema. All outputs must conform exactly to this structure, including the types and descriptions of each field.
+# json
+# {
+#     "type": "OBJECT",
+#     "properties": {
+#         "gender": {
+#             "type": "STRING",
+#             "description": "Gender of the person involved"
+#         },
+#         "incident_type": {
+#             "type": "STRING",
+#             "description": "Type of the incident, e.g., 'crime' or 'accident'."
+#         },
+#         "age": {
+#             "type": "INTEGER",
+#             "description": "Age of the person involved in the incident."
+#         },
+#         "death": {
+#             "type": "INTEGER",
+#             "description": "Number of people who died in the accident or crime."
+#         },
+#         "location": {
+#             "type": "object",
+#             "properties": {
+#                 "latitude": { "type": "number" },
+#                 "longitude": { "type": "number" }
+#             },
+#             "description": "Location details of the incident."
+#         },
+#         "grievous": {
+#             "type": "INTEGER",
+#             "description": "Count of people who got serious injuries in the accident."
+#         },
+#         "minor": {
+#             "type": "INTEGER",
+#             "description": "Count of people who got minor injuries in the accident."
+#         },
+#         "accident_details": {
+#             "type": "object",
+#             "properties": {
+#                 "accident_type": { 
+#                     "type": "string", 
+#                     "description": "Severity of accident, e.g., Fatal or minor accident or grievous accident."
+#                 },
+#                 "safety_device_used": {
+#                     "type": "boolean",
+#                     "description": "Whether a safety device was used."
+#                 },
+#                 "alcohol_involvement": {
+#                     "type": "boolean",
+#                     "description": "True if alcohol or drugs were involved, false otherwise."
+#                 }
+#             },
+#             "description": "Details about the accident if it applies."
+#         },
+#         "crime_details": {
+#             "type": "object",
+#             "properties": {
+#                 "category": {
+#                     "type": "string",
+#                     "description": "Category of crime."
+#                 },
+#                 "type_of_crime": {
+#                     "type": "string",
+#                     "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."
+#                 }
+#             },
+#             "description": "Details about the crime if it applies."
+#         }
+#     },
+#     "required": [
+#         "gender", 
+#         "age", 
+#         "death", 
+#         "grievous", 
+#         "minor", 
+#         "accident_details", 
+#         "crime_details"
+#     ]
+# }
+# Note: Ensure that each output adheres to this structure, with the correct data types and descriptions. Any response not matching this format will be considered incorrect."""
 app = Flask(__name__)
 CORS(app)
 
@@ -109,15 +110,19 @@ def predict():
         longitude = data['Longitude']
         latitude = data['Latitude']
 
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         time_section = time_to_section(current_time)
+        # time_section = 'Night'
 
         filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(
             None, time_section)
         crime_score, acc_score = calculate_combined_score(
             latitude, longitude, filtered_accident_data, filtered_crime_data, 40)
-
+        print(filtered_accident_data)
+        # print(filtered_crime_data)
         if acc_score > 0.0358:
+            print((max(accident_data['accident_score'].values)))
+            print(acc_score)
             acc_score = (1 - ((acc_score-0.035)/(max(accident_data['accident_score'].values)-0.035)))*10
         else:
             acc_score = 10
@@ -128,7 +133,7 @@ def predict():
                            'crime_score': crime_score, "accident_score": acc_score})
         return make_response(response, 200)
     except Exception as e:
-        # print(e)
+        print(e)
         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
 
 
@@ -150,7 +155,7 @@ def getdirection():
         
         end  = time.time()
 
-        print(end-start)
+        # print(end-start)
 
         direction_polylines = []
         if directions['status'] == 'OK':
@@ -168,6 +173,7 @@ def getdirection():
         # uid = 1
         current_time = datetime.datetime.now()
         time_section = time_to_section(current_time)
+        # time_section='Night'
         filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(None, time_section)
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
@@ -184,6 +190,7 @@ def getdirection():
                     lat_long_arr[i][1], lat_long_arr[i][0], filtered_accident_data, filtered_crime_data, 40)
                 # danger += temp1
                 if temp3 > 0.0358:
+                    print((max(accident_data['accident_score'].values)))
                     temp3 = (
                         1 - ((temp3-0.0357)/((max(accident_data['accident_score'].values))-0.0357)))*10
                 else:
@@ -233,68 +240,67 @@ def update_data():
     REGION = "us-central1"
     vertexai.init(project=PROJECT_ID, location=REGION)
 
-    generative_model = GenerativeModel(
-        "gemini-1.0-pro", system_instruction=sysprompt)
-    # response_schemas = {
-    #     "type": "OBJECT",
-    #     "properties": {
-    #         "gender": {
-    #             "type": "STRING",
-    #             "description": "Gender of the person involved",
-    #         },
-    #         "incident_type": {
-    #             "type": "STRING",
-    #             "description": "Type of the incident, e.g., 'crime' or 'accident'."
-    #         },
-    #         "age": {
-    #             "type": "INTEGER",
-    #             "description": "Age of the person involved in the incident."
-    #         },
-    #         "death": {
-    #             "type": "INTEGER",
-    #             "description": "Number of people died in accident or crime."
-    #         },
-    #         "location": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "latitude": {"type": "number"},
-    #                 "longitude": {"type": "number"}
-    #             },
-    #             "description": "Location details of the incident."
-    #         },
-    #         "grievous": {
-    #             "type": "INTEGER",
-    #             "description": "Count of people who got serious injuries in accident."
-    #         },
-    #         "minor": {
-    #             "type": "INTEGER",
-    #             "description": "Count of people who got minor injuries in accident."
-    #         },
-    #         "accident_details": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "accident_type": {"type": "string", "description": "Severity of accident., e.g., Fatal or minor accident or grevious accident"},
-    #                 "safety_device_used": {"type": "boolean", "description": "Whether a safety device was used."},
-    #                 "alcohol_involvement": {"type": "boolean", "description": "True if alcohol or drugs were involved, false otherwise."},
+    generative_model = GenerativeModel("gemini-1.5-pro-001")
+    response_schemas = {
+        "type": "OBJECT",
+        "properties": {
+            "gender": {
+                "type": "STRING",
+                "description": "Gender of the person involved",
+            },
+            "incident_type": {
+                "type": "STRING",
+                "description": "Type of the incident, e.g., 'crime' or 'accident'."
+            },
+            "age": {
+                "type": "INTEGER",
+                "description": "Age of the person involved in the incident."
+            },
+            "death": {
+                "type": "INTEGER",
+                "description": "Number of people died in accident or crime."
+            },
+            "location": {
+                "type": "object",
+                "properties": {
+                    "latitude": {"type": "number"},
+                    "longitude": {"type": "number"}
+                },
+                "description": "Location details of the incident."
+            },
+            "grievous": {
+                "type": "INTEGER",
+                "description": "Count of people who got serious injuries in accident."
+            },
+            "minor": {
+                "type": "INTEGER",
+                "description": "Count of people who got minor injuries in accident."
+            },
+            "accident_details": {
+                "type": "object",
+                "properties": {
+                    "accident_type": {"type": "string", "description": "Severity of accident., e.g., Fatal or minor accident or grevious accident"},
+                    "safety_device_used": {"type": "boolean", "description": "Whether a safety device was used."},
+                    "alcohol_involvement": {"type": "boolean", "description": "True if alcohol or drugs were involved, false otherwise."},
 
-    #             },
-    #             "description": "Details about the accident if it applies."
-    #         },
-    #         "crime_details": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "category": {"type": "string", "description": "Category of crime."},
-    #                 "type_of_crime": {"type": "string", "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."},
-    #             },
-    #             "description": "Details about the accident if it applies."
-    #         },
-    #     },
-    #     "required": ["gender", "age", "death", "grievous", "minor", "accident_details", "crime_details"]
+                },
+                "description": "Details about the accident if it applies."
+            },
+            "crime_details": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "description": "Category of crime."},
+                    "type_of_crime": {"type": "string", "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."},
+                },
+                "description": "Details about the accident if it applies."
+            },
+        },
+        "required": ["gender", "age", "death", "grievous", "minor", "accident_details", "crime_details"]
 
-    # }
-    # generation_configs = GenerationConfig(
-    #     response_mime_type="application/json", response_schema=response_schemas)
-    generation_configs = GenerationConfig(temperature=0)
+    }
+    generation_configs = GenerationConfig(
+        response_mime_type="application/json", response_schema=response_schemas)
+    # generation_configs = GenerationConfig(temperature=0)
 
     try:
 
@@ -304,34 +310,40 @@ def update_data():
             description, generation_config=generation_configs)
 
         # Step 1: Remove the code block markers and unnecessary characters
-        response_cleaned = response.text.strip(
-            '"')  # Remove surrounding quotes
-        response_cleaned = response_cleaned.replace('```json\n', '').replace(
-            '\n```', '')  # Remove code block markers
+        # response_cleaned = response.text.strip(
+        #     '"')  # Remove surrounding quotes
+        # response_cleaned = response_cleaned.replace('```json\n', '').replace(
+        #     '\n```', '')  # Remove code block markers
 
-        # Step 2: Parse the cleaned string into a JSON object
-        json_data = json.loads(response_cleaned)
+        # # Step 2: Parse the cleaned string into a JSON object
+        # json_data = json.loads(response_cleaned)
 
-        # Now, `json_data` is a dictionary object containing the parsed JSON data
-        print(json_data)
-        desc_data = json_data
-        # print(response)
+        # # Now, `json_data` is a dictionary object containing the parsed JSON data
+        # print(json_data)
+        desc_data = json.loads(response.text)
+        print(desc_data)
+
 
         if (desc_data['incident_type'] == 'accident'):
             print("accident")
-            new_data_values = [{'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Minor Injury', 'Death': 0, 'Grievous': 0, 'Minor': 1,
+            new_data_values = [{'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Fatal', 'Death': 1, 'Grievous': 0, 'Minor': 0,
                                 'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Night', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},]
 
             new_data_values[0]['Date accident'] = date
-            new_data_values[0]['Time accident'] = time
+            print(time)
+            # print(time.time())
+            date_time_obj = datetime.strptime(
+                time, "%Y-%m-%d %H:%M:%S.%f").strftime("%H:%M:%S")
+            print(date_time_obj)
+            new_data_values[0]['Time accident'] = date_time_obj
             new_data_values[0]['Longitude'] = lng
             new_data_values[0]['Latitude'] = lat
             time_section = time_to_section(time)
-            # print(time_section)
+            print(time_section)
             new_data_values[0]['time_section'] = time_section
-            new_data_values[0]['Death'] = desc_data['death']
-            new_data_values[0]['Grievous'] = desc_data['grievous']
-            new_data_values[0]['Minor'] = desc_data['minor']
+            new_data_values[0]['Death'] = new_data_values[0]['Death'] if desc_data['death'] < 0 else desc_data['death']
+            new_data_values[0]['Grievous'] = new_data_values[0]['grievous'] if desc_data['grievous'] < 0 else desc_data['grievous']
+            new_data_values[0]['Minor'] = new_data_values[0]['minor'] if desc_data['minor'] < 0 else desc_data['minor']
             new_data_values[0]['Gender'] = 'Female' if desc_data['gender'] == 'female' else 'Male'
 
             data_update(new_data_values)
@@ -340,15 +352,12 @@ def update_data():
             new_data_value = [
                 {'Date of Report': '2024-08-01', 'Time of Report': '15:30:00', 'Gender': 'Male', 'Age': 18, 'Latitude': 11.280500, 'Longitude': 75.819000, 'Category': 'Uncategorized', 'time_section': 'Night', 'age_weightage': 0, 'crime_category_weightage': 0, 'crime_score': 0}]
             new_data_value[0]['Date of Report'] = date
-            new_data_value[0]['Time of Report'] = time
+            new_data_value[0]['Time of Report'] = time.time()
             time_section = time_to_section(time)
             new_data_value[0]['time_section'] = time_section
             new_data_value[0]['Latitude'] = lat
             new_data_value[0]['Longitude'] = lng
             new_data_value[0]['Gender'] = 'Female' if desc_data['gender'] == 'female' else 'Male'
-
-            # print(desc_data['crime_details'])
-            # data_update_crime(new_data_value)
 
     except Exception as e:
         return str(e), 404

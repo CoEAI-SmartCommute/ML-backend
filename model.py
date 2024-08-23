@@ -29,6 +29,7 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
     crime_locations = filtered_crime_data[[
         'Latitude', 'Longitude']].drop_duplicates().values
     
+    
     # print(crime_locations.shape)
 
     accident_nbrs = NearestNeighbors(
@@ -89,6 +90,7 @@ def calculate_combined_score(lat, lon, filtered_accident_data, filtered_crime_da
     return crime_score,acc_score
 
 def filter_data(gender,time_section):
+    print( accident_data)
     filtered_accident_data = accident_data
     filtered_crime_data = crime_data
 
@@ -116,6 +118,7 @@ def data_update(new_data_value):
     print(len(accident_data))
     accident_data = update_accident_data(accident_data,new_data_value)
     print(len(accident_data))
+    print(accident_data)
 
 
 
