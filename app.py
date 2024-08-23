@@ -12,6 +12,7 @@ from gmap import PROJECT_ID, decode_polyline, get_directions
 import os
 import time
 from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 CORS(app)
@@ -28,8 +29,8 @@ def predict():
         data = request.get_json(force=True)
         longitude = data['Longitude']
         latitude = data['Latitude']
-
-        current_time = datetime.now()
+        timeZone = pytz.timezone('Asia/Kolkata')
+        current_time = datetime.now(timeZone)
         time_section = time_to_section(current_time)
         # time_section = 'Night'
 
@@ -37,11 +38,11 @@ def predict():
             None, time_section)
         crime_score, acc_score = calculate_combined_score(
             latitude, longitude, filtered_accident_data, filtered_crime_data, 40)
-        print(filtered_accident_data)
+        # print(filtered_accident_data)
         # print(filtered_crime_data)
         if acc_score > 0.0358:
-            print((max(accident_data['accident_score'].values)))
-            print(acc_score)
+            # print((max(accident_data['accident_score'].values)))
+            # print(acc_score)
             acc_score = (1 - ((acc_score-0.035)/(max(accident_data['accident_score'].values)-0.035)))*10
         else:
             acc_score = 10
@@ -52,7 +53,7 @@ def predict():
                            'crime_score': crime_score, "accident_score": acc_score})
         return make_response(response, 200)
     except Exception as e:
-        print(e)
+        # print(e)
         return Response('{ "message":"Please try later"}', status=500, mimetype='application/json')
 
 
@@ -90,14 +91,15 @@ def getdirection():
 
         result = []
         # uid = 1
-        current_time = datetime.now()
+        timeZone = pytz.timezone('Asia/Kolkata')
+        current_time = datetime.now(timeZone)
         time_section = time_to_section(current_time)
         # time_section='Night'
         filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(gender, time_section)
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
             sz = len(lat_long_arr)
-            print(sz)
+            # print(sz)
             # danger = 0
             crime_score = 0
             acc_score = 0
@@ -109,7 +111,7 @@ def getdirection():
                     lat_long_arr[i][1], lat_long_arr[i][0], filtered_accident_data, filtered_crime_data, 40)
                 # danger += temp1
                 if temp3 > 0.0358:
-                    print((max(accident_data['accident_score'].values)))
+                    # print((max(accident_data['accident_score'].values)))
                     temp3 = (
                         1 - ((temp3-0.0357)/((max(accident_data['accident_score'].values))-0.0357)))*10
                 else:
@@ -240,25 +242,25 @@ def update_data():
         # # Now, `json_data` is a dictionary object containing the parsed JSON data
         # print(json_data)
         desc_data = json.loads(response.text)
-        print(desc_data)
+        # print(desc_data)
 
 
         if (desc_data['incident_type'] == 'accident'):
-            print("accident")
+            # print("accident")
             new_data_values = [{'Date accident': '2024-08-01', 'Time accident': '15:30:00', 'Accident type': 'Fatal', 'Death': 1, 'Grievous': 0, 'Minor': 0,
                                 'Gender': 'Male', 'Safety Device': 'Seat Belt', 'Alcohol Drugs': 'no', 'Longitude': 75.819000, 'Latitude': 11.280500, 'time_section': 'Night', 'age_weightage': 0, 'accident_type_weightage': 0, 'individual_score': 0, 'accident_score': 0},]
 
             new_data_values[0]['Date accident'] = date
-            print(time)
+            # print(time)
             # print(time.time())
             date_time_obj = datetime.strptime(
                 time, "%Y-%m-%d %H:%M:%S.%f").strftime("%H:%M:%S")
-            print(date_time_obj)
+            # print(date_time_obj)
             new_data_values[0]['Time accident'] = date_time_obj
             new_data_values[0]['Longitude'] = lng
             new_data_values[0]['Latitude'] = lat
             time_section = time_to_section(time)
-            print(time_section)
+            # print(time_section)
             new_data_values[0]['time_section'] = time_section
             new_data_values[0]['Death'] = new_data_values[0]['Death'] if desc_data['death'] < 0 else desc_data['death']
             new_data_values[0]['Grievous'] = new_data_values[0]['grievous'] if desc_data['grievous'] < 0 else desc_data['grievous']
@@ -267,7 +269,7 @@ def update_data():
 
             data_update(new_data_values)
         else:
-            print("crime")
+            # print("crime")
             new_data_value = [
                 {'Date of Report': '2024-08-01', 'Time of Report': '15:30:00', 'Gender': 'Male', 'Age': 18, 'Latitude': 11.280500, 'Longitude': 75.819000, 'Category': 'Uncategorized', 'time_section': 'Night', 'age_weightage': 0, 'crime_category_weightage': 0, 'crime_score': 0}]
             new_data_value[0]['Date of Report'] = date
