@@ -13,87 +13,6 @@ import os
 import time
 from datetime import datetime
 
-# sysprompt = """You are required to generate a JSON response that strictly adheres to the following schema. All outputs must conform exactly to this structure, including the types and descriptions of each field.
-# json
-# {
-#     "type": "OBJECT",
-#     "properties": {
-#         "gender": {
-#             "type": "STRING",
-#             "description": "Gender of the person involved"
-#         },
-#         "incident_type": {
-#             "type": "STRING",
-#             "description": "Type of the incident, e.g., 'crime' or 'accident'."
-#         },
-#         "age": {
-#             "type": "INTEGER",
-#             "description": "Age of the person involved in the incident."
-#         },
-#         "death": {
-#             "type": "INTEGER",
-#             "description": "Number of people who died in the accident or crime."
-#         },
-#         "location": {
-#             "type": "object",
-#             "properties": {
-#                 "latitude": { "type": "number" },
-#                 "longitude": { "type": "number" }
-#             },
-#             "description": "Location details of the incident."
-#         },
-#         "grievous": {
-#             "type": "INTEGER",
-#             "description": "Count of people who got serious injuries in the accident."
-#         },
-#         "minor": {
-#             "type": "INTEGER",
-#             "description": "Count of people who got minor injuries in the accident."
-#         },
-#         "accident_details": {
-#             "type": "object",
-#             "properties": {
-#                 "accident_type": { 
-#                     "type": "string", 
-#                     "description": "Severity of accident, e.g., Fatal or minor accident or grievous accident."
-#                 },
-#                 "safety_device_used": {
-#                     "type": "boolean",
-#                     "description": "Whether a safety device was used."
-#                 },
-#                 "alcohol_involvement": {
-#                     "type": "boolean",
-#                     "description": "True if alcohol or drugs were involved, false otherwise."
-#                 }
-#             },
-#             "description": "Details about the accident if it applies."
-#         },
-#         "crime_details": {
-#             "type": "object",
-#             "properties": {
-#                 "category": {
-#                     "type": "string",
-#                     "description": "Category of crime."
-#                 },
-#                 "type_of_crime": {
-#                     "type": "string",
-#                     "description": "Specific type of crime, e.g., 'assault', 'robbery', 'murder'."
-#                 }
-#             },
-#             "description": "Details about the crime if it applies."
-#         }
-#     },
-#     "required": [
-#         "gender", 
-#         "age", 
-#         "death", 
-#         "grievous", 
-#         "minor", 
-#         "accident_details", 
-#         "crime_details"
-#     ]
-# }
-# Note: Ensure that each output adheres to this structure, with the correct data types and descriptions. Any response not matching this format will be considered incorrect."""
 app = Flask(__name__)
 CORS(app)
 
@@ -149,11 +68,11 @@ def getdirection():
         gender = data['gender']
         travel_mode = data['travel_mode']
 
-        start  =time.time()
+        # start  =time.time()
         directions = get_directions(
             origin_lat, origin_long, dest_lat, dest_long, travel_mode)
         
-        end  = time.time()
+        # end  = time.time()
 
         # print(end-start)
 
@@ -171,10 +90,10 @@ def getdirection():
 
         result = []
         # uid = 1
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         time_section = time_to_section(current_time)
         # time_section='Night'
-        filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(None, time_section)
+        filtered_accident_data, filtered_crime_data, accident_data, crime_data = filter_data(gender, time_section)
         for r in direction_polylines:
             lat_long_arr = decode_polyline(r['polyline'])
             sz = len(lat_long_arr)
@@ -182,7 +101,7 @@ def getdirection():
             # danger = 0
             crime_score = 0
             acc_score = 0
-            cnt=0;
+            cnt=0
             # i=0
             for i in range(1,sz,10):
                 cnt = cnt+1
@@ -304,8 +223,8 @@ def update_data():
 
     try:
 
-        service_account_key_path = '../saarthi.json'
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_key_path
+        # service_account_key_path = '../saarthi.json'
+        # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_key_path
         response = generative_model.generate_content(
             description, generation_config=generation_configs)
 
